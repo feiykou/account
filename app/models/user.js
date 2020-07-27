@@ -70,9 +70,9 @@ User.init({
     modelName: 'user'
 })
 
-User.sync({
-    force: true
-});
+// User.sync({
+//     force: true
+// });
 
 // User.sync();
 

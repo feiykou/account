@@ -110,7 +110,7 @@ class Account extends Model {
         const nextDate = new Date(oldYear, oldMonth, oldDay)
         const nowDate = new Date()
         
-        if(nextDate.getTime() > Number(startTime) && nextDate.getTime() > nowDate.getTime()) {
+        if(nextDate.getTime() > Number(startTime) && nextDate.getTime() < nowDate.getTime()) {
             return true
         } else {
             throw new global.errs.NotFound('晚上11点半之后更新')

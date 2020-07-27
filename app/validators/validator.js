@@ -109,7 +109,7 @@ class TokenValidator extends BaseValidator {
             })
         ]
     }
-    validateLoginType = checkType
+    // validateLoginType = checkType
 }
 
 class ClassicValidator extends BaseValidator {

@@ -7,7 +7,6 @@ const catchError = require('./middlewares/exception')
 // require('./app/models/user')
 // require('./app/models/account')
 // require('./app/models/code')
-
 const app = new Koa()
 
 // const Router = require('koa-router')

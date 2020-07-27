@@ -44,4 +44,4 @@ Initmanager.initCore(app)
 // })
 
 
-app.listen(3106)
+app.listen(3006)

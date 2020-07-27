@@ -3,11 +3,12 @@ const basicAuth = require('basic-auth')
 const jwt = require('jsonwebtoken')
 
 class Auth {
-    static USER = 8
-    static ADMIN = 16
-    static SUPER_ADMIN = 32
+    
     constructor(level) {
         this.level = level || 1
+        Auth.USER = 8
+        Auth.ADMIN = 16
+        Auth.SUPER_ADMIN = 32
     }
 
     get m() {

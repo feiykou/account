@@ -81,7 +81,7 @@ class UserCodeValidator extends BaseValidator {
             })
         ]
     }
-    validateType = checkAccountType
+    // validateType = checkAccountType
 }
 
 class TokenValidator extends BaseValidator {

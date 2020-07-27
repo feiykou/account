@@ -5,8 +5,8 @@ const catchError = require('./middlewares/exception')
 
 // 创建数据库
 // require('./app/models/user')
-// require('./app/models/classic')
-require('./app/models/code')
+// require('./app/models/account')
+// require('./app/models/code')
 
 const app = new Koa()
 
@@ -45,4 +45,4 @@ Initmanager.initCore(app)
 // })
 
 
-app.listen(3006)
+app.listen(3106)

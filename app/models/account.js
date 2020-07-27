@@ -140,8 +140,9 @@ Account.init({
 }, {
     sequelize: db
 })
-
-// Account.sync();
+Account.sync({
+    force: true
+});
 
 module.exports = {
     Account

@@ -1,11 +1,18 @@
 module.exports = {
     environment: 'dev',
+    // database: {
+    //     dbName: 'account',
+    //     host: 'localhost',
+    //     port: 3306,
+    //     user: 'root',
+    //     password: 'root'
+    // },
     database: {
         dbName: 'account',
-        host: 'localhost',
+        host: '47.107.151.126',
         port: 3306,
-        user: 'root',
-        password: 'root'
+        user: 'mgoi',
+        password: 'Mgoi_222'
     },
     security: {
         secretKey: 'dasdasdasfg',

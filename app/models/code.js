@@ -67,9 +67,13 @@ Code.init({
     sequelize: db
 })
 
-// UserCode.sync({
-//     force: true
-// });
+UserCode.sync({
+    force: true
+});
+
+Code.sync({
+    force: true
+});
 
 module.exports = {
     Code,

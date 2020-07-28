@@ -45,6 +45,7 @@ class UserCode extends Model {
         const res = await UserCode.create({
             code,
             uid,
+            codes_id: codeData['id'],
             type: codeData.type
         })
         return res
@@ -54,7 +55,8 @@ class UserCode extends Model {
 UserCode.init({
     uid: DataTypes.INTEGER,
     code: DataTypes.STRING,
-    type: DataTypes.INTEGER
+    type: DataTypes.INTEGER,
+    codes_id: DataTypes.INTEGER
 }, {
     sequelize: db
 })

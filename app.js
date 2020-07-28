@@ -8,7 +8,11 @@ const catchError = require('./middlewares/exception')
 // require('./app/models/account')
 // require('./app/models/code')
 const app = new Koa()
-
+// 处理跨域
+app.use(async (ctx, next) => {
+    ctx.set("Access-Control-Allow-Origin", "*")
+    await next()
+})
 // const Router = require('koa-router')
 // const book = require('./api/v1/book')
 // 要写在路由注入app之前

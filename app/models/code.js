@@ -28,7 +28,12 @@ class UserCode extends Model {
 
     static async createCode(code, type, uid) {
         // 判断userCode是否有该code，判断是否有人已领取code
-        const userCodeData = await UserCode.getUserCode(code, type, uid)
+        const userCodeData = await UserCode.findOne({
+            where: {
+                type,
+                code
+            }
+        })
         if(userCodeData) {
             throw new global.errs.NotFound('激活码已被使用')
         }

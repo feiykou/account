@@ -35,6 +35,8 @@ class Account extends Model {
     }
 
     static async getRepeatAccount(type, uid, redis) {
+        // redis.del(`account:${uid}:time`)
+        // redis.del(`account:${uid}`)
         if(type == AccountType.ALL) {
             return await Account.getAccountCache(redis, uid)
         }

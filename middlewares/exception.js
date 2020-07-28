@@ -15,6 +15,7 @@ const catchError = async function(ctx, next) {
             ctx.body = {
                 error_code: error.errorCode,
                 msg: error.msg,
+                data: error.data || {},
                 request: `${ctx.method} ${JSON.stringify(ctx.url)}`
             }
             ctx.status = error.code

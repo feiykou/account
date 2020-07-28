@@ -14,22 +14,21 @@ class Account extends Model {
             throw new global.errs.Forbbiden()
         }
         const cacheAccount  = await Account.getAccountCache(redis, uid)
-        let where = {}
-        
+        // 获取对应类型的账号
+        let where = { 'type': type }
         if(cacheAccount && cacheAccount[type]) {
             where['account'] = {
                 [Op.ne]: cacheAccount[type]['account']
             }
         }
-        console.log(where);
-        
         const res = await Account.findAll({
             attributes: ['account', 'password'],
             where,
             limit: 1,
             order: db.random()
         })
-        if(!res) {
+        
+        if(!res || res.length <= 0) {
             throw new global.errs.NotFound()
         }
         return res
@@ -45,15 +44,26 @@ class Account extends Model {
         if(redisAccount[type]) {
             return redisAccount
         }
-        
         const userCodeData = await UserCode.findOne({
             where: {
                 type,
                 uid
             }
         })
+        
         if(!userCodeData) {
-            throw new global.errs.NotFound('激活码不存在')
+            // 激活码不存在，则删除缓存，让用户重新激活
+            let redisAccount = await redis.get(`account:${uid}`)
+            if(redisAccount && redisAccount[type]) {
+                redisAccount = JSON.parse(redisAccount)
+                delete redisAccount[type]
+                redis.set(`account:${uid}`, JSON.stringify(redisAccount))
+            }
+            if(Object.keys(redisAccount).length === 0) {
+                redisAccount = null
+            }
+            // 在客户端设置该账号不存在，重新激活
+            throw new global.errs.codeError('激活码不存在', 10010, {data: redisAccount})
         }
         const newsAccountData = await Account.getAccount(userCodeData['code'], type, uid, redis)
         redisAccount[type] = newsAccountData[0]
@@ -87,8 +97,6 @@ class Account extends Model {
         // 开始时间不存在，更新
         // 大于11点半更新
         const startTime = await redis.get(`account:${uid}:time`)
-        console.log(startTime);
-        
         if(!startTime) return true
         let oldDate = new Date(Number(startTime))
         let oldYear = oldDate.getFullYear()  // 年
@@ -110,19 +118,13 @@ class Account extends Model {
         const nextDate = new Date(oldYear, oldMonth, oldDay)
         const nowDate = new Date()
         
-        if(nextDate.getTime() > Number(startTime) && nextDate.getTime() < nowDate.getTime()) {
-            return true
-        } else {
-            throw new global.errs.NotFound('晚上11点半之后更新')
-        }
-        
-        // const hours = date.getHours()
-        // const minutes = date.getMinutes()
-        // if(hours === 23 && minutes === 30) {
-        //     redis.del(`account:${uid}`)
-        //     return false
+        // if(nextDate.getTime() > Number(startTime) && nextDate.getTime() < nowDate.getTime()) {
+        //     return true
+        // } else {
+        //     throw new global.errs.NotFound('晚上11点半之后更新')
         // }
         
+        return true
     }
 }
 

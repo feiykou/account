@@ -3,6 +3,7 @@ const { Sequelize, Op, Model, DataTypes } = require("sequelize");
 const { db } = require('../../core/db')
 
 const { UserCode } = require('../models/code') 
+const { AccountRecord } = require('../models/record') 
 const { AccountType } = require('../lib/enum')
 
 
@@ -16,22 +17,56 @@ class Account extends Model {
         const cacheAccount  = await Account.getAccountCache(redis, uid)
         // 获取对应类型的账号
         let where = { 'type': type }
+        where['fav_nums'] = {
+            [Op.lte]: 9
+        }
         if(cacheAccount && cacheAccount[type]) {
             where['account'] = {
                 [Op.ne]: cacheAccount[type]['account']
             }
         }
-        const res = await Account.findAll({
-            attributes: ['account', 'password'],
-            where,
-            limit: 1,
-            order: db.random()
-        })
-        
-        if(!res || res.length <= 0) {
+        const t = await db.transaction();
+        try {
+            const res = await Account.findAll({
+                attributes: ['account', 'password', 'id'],
+                where,
+                limit: 1,
+                order: db.random(),
+                transaction: t
+            })
+            
+            if(!res || res.length <= 0) {
+                throw new global.errs.NotFound()
+            }
+            
+            AccountRecord.create({
+                account_id: res[0]['id'],
+                'user_id': uid,
+                type,
+                transaction: t 
+            })
+            await this.incrementFavoNums(res[0]['id'])
+            await t.commit();
+            return res
+        } catch (error) {
+            await t.rollback();
+            // 如果执行到此,则发生错误.
+            // 该事务已由 Sequelize 自动回滚！
+            console.log(error);
             throw new global.errs.NotFound()
         }
-        return res
+        
+        
+    }
+
+    static async incrementFavoNums(id) {
+        Account.increment({
+            fav_nums: 1,
+        }, {
+            where: {
+                id
+            }
+        })
     }
 
     static async getRepeatAccount(type, uid, redis) {
@@ -119,12 +154,12 @@ class Account extends Model {
         
         const nextDate = new Date(oldYear, oldMonth, oldDay)
         const nowDate = new Date()
-        
-        // if(nextDate.getTime() > Number(startTime) && nextDate.getTime() < nowDate.getTime()) {
-        //     return true
-        // } else {
-        //     throw new global.errs.NotFound('晚上11点半之后更新')
-        // }
+
+        if(nextDate.getTime() > Number(startTime) && nextDate.getTime() < nowDate.getTime()) {
+            return true
+        } else {
+            throw new global.errs.NotFound('晚上12点之后更新')
+        }
         
         return true
     }
@@ -138,8 +173,11 @@ Account.init({
         autoIncrement: true
     },
     account: DataTypes.STRING,
-    password:  DataTypes.STRING,
-    fav_nums: DataTypes.INTEGER,
+    password: DataTypes.STRING,
+    fav_nums: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0
+    },
     type: DataTypes.BOOLEAN
 }, {
     sequelize: db

@@ -6,6 +6,7 @@ const catchError = require('./middlewares/exception')
 // 创建数据库
 // require('./app/models/user')
 // require('./app/models/account')
+// require('./app/models/record')
 // require('./app/models/code')
 const app = new Koa()
 // 处理跨域

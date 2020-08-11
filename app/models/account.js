@@ -16,7 +16,7 @@ class Account extends Model {
         }
         const cacheAccount  = await Account.getAccountCache(redis, uid)
         // 获取对应类型的账号
-        let where = { 'type': type }
+        let where = { 'type': type, 'status': 1 }
         where['fav_nums'] = {
             [Op.lte]: 9
         }

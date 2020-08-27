@@ -6,6 +6,8 @@ const { UserCode } = require('../models/code')
 const { AccountRecord } = require('../models/record') 
 const { AccountType } = require('../lib/enum')
 
+const {getNextMonth, getNextDay} = require('../../core/util')
+
 
 class Account extends Model { 
 
@@ -14,6 +16,11 @@ class Account extends Model {
         if(!result) {
             throw new global.errs.Forbbiden()
         }
+        // const isTime = await Account.isNoTime(result['create_at'], result['time'])
+        // if(!isTime) {
+        //     await UserCode.delCode(code,uid)
+        //     throw new global.errs.codeError()
+        // }
         const cacheAccount  = await Account.getAccountCache(redis, uid)
         // 获取对应类型的账号
         let where = { 'type': type, 'status': 1 }
@@ -59,6 +66,38 @@ class Account extends Model {
         
     }
 
+    // 判断是否过期
+    static async isNoTime(createTime, time) {
+        const date = new Date(createTime)
+        const nowDate = new Date()
+        let nextTime = 0
+        switch (time) {
+            case 1:
+                nextTime = getNextDay(date).getTime()
+                // 1天
+                break;
+            case 2:
+                // 7天
+                nextTime = getNextDay(date, 7).getTime()
+                break;
+            case 3:
+                // 1个月
+                const time = getNextMonth(date)
+                nextTime = new Date(time).getTime()
+                break;
+            case 4:
+                // 1年
+                date.setFullYear(date.getFullYear+1)
+                date.setDate(date.getDate()-1)
+                nextTime = date.getTime()
+                break;
+        }
+        if(nowDate.getTime() < nextTime) {
+            return true
+        }
+        return false
+    }
+
     static async incrementFavoNums(id) {
         Account.increment({
             fav_nums: 1,
@@ -91,10 +130,14 @@ class Account extends Model {
         if(!userCodeData) {
             // 激活码不存在，则删除缓存，让用户重新激活
             let redisAccount = await redis.get(`account:${uid}`)
-            if(redisAccount && redisAccount[type]) {
+            if(redisAccount) {
                 redisAccount = JSON.parse(redisAccount)
-                delete redisAccount[type]
-                redis.set(`account:${uid}`, JSON.stringify(redisAccount))
+                console.log(redisAccount);
+                
+                if(redisAccount[type]) {
+                    delete redisAccount[type]
+                    redis.set(`account:${uid}`, JSON.stringify(redisAccount))
+                }
             }
             if(Object.keys(redisAccount).length === 0) {
                 redisAccount = null

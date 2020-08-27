@@ -46,9 +46,20 @@ class UserCode extends Model {
             code,
             uid,
             codes_id: codeData['id'],
-            type: codeData.type
+            type: codeData.type,
+            time: codeData.time
         })
         return res
+    }
+
+    static async delCode(code, uid) {
+        const result = await UserCode.destroy({
+            where: {
+                code,
+                uid
+            }
+        })
+        return result
     }
 }
 
@@ -56,9 +67,11 @@ UserCode.init({
     uid: DataTypes.INTEGER,
     code: DataTypes.STRING,
     type: DataTypes.INTEGER,
+    time: DataTypes.INTEGER,
     codes_id: DataTypes.INTEGER
 }, {
-    sequelize: db
+    sequelize: db,
+    paranoid: true
 })
 
 Code.init({

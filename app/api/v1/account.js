@@ -5,6 +5,7 @@ const {AccountTypeValidator, AccountValidator} = require('../../validators/valid
 const {Account} = require("../../models/account")
 const { Auth } = require('../../../middlewares/auth')
 const redis = require('../../../config/redis')
+const { AccountType } = require('../../lib/enum')
 
 // 注意prefix，v1前面要加上/
 const router = new Router({
@@ -12,27 +13,48 @@ const router = new Router({
 })
 
 /**
- * 获取账号
+ * 获取账号  --- 通过code码获取账号
+ * 1、检测参数
+ * 2、获取缓存所有账号
+ * 3、获取账号
+ * 4、重新设置缓存账号和获取账号时间
  */
 router.get('/', new Auth(Auth.USER).m, async ctx => {
     const t = await new AccountValidator().validate(ctx)
-    let accountData = await redis.get(`account:${ctx.auth.uid}`)
-    accountData = JSON.parse(accountData)
-    if(!accountData) accountData = {}
     const res = await Account.getAccount(t.get('query.code'), t.get('query.type'), ctx.auth.uid, redis)
-    accountData[t.get('query.type')] = res[0]
-    redis.set(`account:${ctx.auth.uid}`, JSON.stringify(accountData))
-    redis.set(`account:${ctx.auth.uid}:time`, new Date().getTime())
+    const accountData = await setAccount(ctx.auth.uid, t.get('query.type'), res[0])
     ctx.body = accountData
 })
 
+/**
+ * 设置账号
+ * @param {*} uid 
+ * @param {*} type 
+ * @param {*} data 
+ */
+async function setAccount(uid, type, data) {
+    let accountData = await redis.get(`account:${uid}`)
+    accountData = JSON.parse(accountData)
+    if(!accountData) accountData = {}
+    accountData[type] = data
+    redis.set(`account:${uid}`, JSON.stringify(accountData))
+    redis.set(`account:${uid}:time`, new Date().getTime())
+    return accountData
+}
+
+
+/**
+ * 点击对应按钮获取账号
+ */
 router.get('/:type', new Auth(Auth.USER).m, async ctx => {
     const t = await new AccountTypeValidator().validate(ctx)
+    // 判断是否到时间更新，并且如果是类型是all，那么则返回缓存数据（bug：存在redis过期的可能）
     const cacheRes = await Account.getCacheData(ctx.auth.uid, t.get('path.type'), redis)
-    if(cacheRes && cacheRes[t.get('path.type')]) {
+    if(t.get('path.type') == AccountType.ALL) {
         ctx.body = cacheRes
-        return;
+        return
     }
+
     const res = await Account.getRepeatAccount(t.get('path.type'), ctx.auth.uid, redis)
     ctx.body = res
 })

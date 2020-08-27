@@ -39,6 +39,7 @@ class UserCode extends Model {
         }
         // 判断是否有code
         const codeData = await Code.getCode(code, type)
+        
         if(!codeData) {
             throw new global.errs.NotFound('该激活码不存在')
         }

@@ -16,11 +16,12 @@ class Account extends Model {
         if(!result) {
             throw new global.errs.Forbbiden()
         }
-        // const isTime = await Account.isNoTime(result['create_at'], result['time'])
-        // if(!isTime) {
-        //     await UserCode.delCode(code,uid)
-        //     throw new global.errs.codeError()
-        // }
+        const isTime = await Account.isNoTime(result['create_at'], result['time'])
+        if(!isTime) {
+            await UserCode.delCode(code,uid)
+            await Account.delCache(redis, uid, type)
+            throw new global.errs.codeError('激活码已过期，请重新激活')
+        }
         const cacheAccount  = await Account.getAccountCache(redis, uid)
         // 获取对应类型的账号
         let where = { 'type': type, 'status': 1 }
@@ -62,7 +63,6 @@ class Account extends Model {
             console.log(error);
             throw new global.errs.NotFound()
         }
-        
         
     }
 
@@ -108,53 +108,78 @@ class Account extends Model {
         })
     }
 
+    /**
+     * 重新获取账号
+     * 以下条件不能获取：
+     * 1、激活码不存在（用户未注册）
+     * 2、激活码已失效（用户激活码到期）
+     * @param {*} type 
+     * @param {*} uid 
+     * @param {*} redis 
+     */
     static async getRepeatAccount(type, uid, redis) {
         // redis.del(`account:${uid}:time`)
         // redis.del(`account:${uid}`)
-        if(type == AccountType.ALL) {
-            return await Account.getAccountCache(redis, uid)
-        }
+        let redisAccount = await Account.getAccountCache(redis, uid)
+        if(!redisAccount) redisAccount = {}
+        // redisAccount = await Account.getAccountCache(uid, type, redis)
+        // if(redisAccount[type]) {
+        //     return redisAccount
+        // }
+        console.log(1);
         
-        let redisAccount = {}
-        redisAccount = await Account.getCacheData(uid, type, redis)
-        if(redisAccount[type]) {
-            return redisAccount
-        }
         const userCodeData = await UserCode.findOne({
             where: {
                 type,
                 uid
             }
         })
-        
+        console.log(2);
         if(!userCodeData) {
-            // 激活码不存在，则删除缓存，让用户重新激活
-            let redisAccount = await redis.get(`account:${uid}`)
-            if(redisAccount) {
-                redisAccount = JSON.parse(redisAccount)
-                console.log(redisAccount);
-                
-                if(redisAccount[type]) {
-                    delete redisAccount[type]
-                    redis.set(`account:${uid}`, JSON.stringify(redisAccount))
-                }
-            }
-            if(Object.keys(redisAccount).length === 0) {
-                redisAccount = null
-            }
+            const redisAccount = await Account.delCache(redis, uid, type)
+            console.log(3);
             // 在客户端设置该账号不存在，重新激活
-            throw new global.errs.codeError('激活码不存在', 10010, {data: redisAccount})
+            throw new global.errs.codeError('激活码失效', 10010, {data: redisAccount})
         }
         const newsAccountData = await Account.getAccount(userCodeData['code'], type, uid, redis)
+        console.log(4);
         redisAccount[type] = newsAccountData[0]
         redis.set(`account:${uid}:time`, new Date().getTime())
         redis.set(`account:${uid}`, JSON.stringify(redisAccount))
         return redisAccount
     }
 
+    /**
+     * 删除缓存
+     * @param {*} uid 
+     * @param {*} type 
+     */
+    static async delCache(redis, uid, type) {
+        // 激活码不存在，则删除缓存，让用户重新激活
+        let redisAccount = await redis.get(`account:${uid}`)
+        if(redisAccount) {
+            redisAccount = JSON.parse(redisAccount)
+            if(redisAccount[type]) {
+                delete redisAccount[type]
+                redis.set(`account:${uid}`, JSON.stringify(redisAccount))
+            }
+        }
+        if(Object.keys(redisAccount).length === 0) {
+            redisAccount = null
+        }
+        return redisAccount
+    }
+
+    /**
+     * 获取缓存，并判断时间点更新
+     * @param {*} uid 
+     * @param {*} type 
+     * @param {*} redis 
+     */
     static async getCacheData(uid, type, redis) {
         const accountData = await Account.getAccountCache(redis, uid)
-        if(type != AccountType.ALL) {
+        if(type != AccountType.ALL) { // all 获取全部缓存的数据
+            // 一天一更新，true代表更新
             const markTime = await Account.getCurrentTime(redis, uid)
             if(markTime) {
                 accountData[type] = null
@@ -163,11 +188,17 @@ class Account extends Model {
         return accountData
     }
 
+    /**
+     * 获取全部缓存数据
+     * @param {*} redis 
+     * @param {*} uid 
+     */
     static async getAccountCache(redis, uid) {
+        // 有问题：当长时间不登录，缓存会失效，那么就会返回空，导致出现重新输入激活码的情况
         let redisAccount = await redis.get(`account:${uid}`)
         if (redisAccount) {
             redisAccount = JSON.parse(redisAccount)
-            return redisAccount;
+            return redisAccount
         }
         return {}
     }
@@ -198,11 +229,11 @@ class Account extends Model {
         const nextDate = new Date(oldYear, oldMonth, oldDay)
         const nowDate = new Date()
 
-        if(nextDate.getTime() > Number(startTime) && nextDate.getTime() < nowDate.getTime()) {
-            return true
-        } else {
-            throw new global.errs.NotFound('晚上12点之后更新')
-        }
+        // if(nextDate.getTime() > Number(startTime) && nextDate.getTime() < nowDate.getTime()) {
+        //     return true
+        // } else {
+        //     throw new global.errs.NotFound('晚上12点之后更新')
+        // }
         
         return true
     }

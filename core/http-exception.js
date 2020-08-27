@@ -56,7 +56,7 @@ class codeError extends HttpException {
     constructor(msg, errorCode, data={}) {
         super()
         this.code = 400
-        this.msg = '激活码不存在'
+        this.msg = msg || '激活码不存在'
         this.data = data
         this.errorCode = 10010
     }

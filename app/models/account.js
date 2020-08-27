@@ -229,11 +229,11 @@ class Account extends Model {
         const nextDate = new Date(oldYear, oldMonth, oldDay)
         const nowDate = new Date()
 
-        // if(nextDate.getTime() > Number(startTime) && nextDate.getTime() < nowDate.getTime()) {
-        //     return true
-        // } else {
-        //     throw new global.errs.NotFound('晚上12点之后更新')
-        // }
+        if(nextDate.getTime() > Number(startTime) && nextDate.getTime() < nowDate.getTime()) {
+            return true
+        } else {
+            throw new global.errs.NotFound('晚上12点之后更新')
+        }
         
         return true
     }

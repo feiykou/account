@@ -87,7 +87,7 @@ class Account extends Model {
                 break;
             case 4:
                 // 1年
-                date.setFullYear(date.getFullYear+1)
+                date.setFullYear(date.getFullYear()+1)
                 date.setDate(date.getDate()-1)
                 nextTime = date.getTime()
                 break;
@@ -126,8 +126,6 @@ class Account extends Model {
         // if(redisAccount[type]) {
         //     return redisAccount
         // }
-        console.log(1);
-        
         const userCodeData = await UserCode.findOne({
             where: {
                 type,

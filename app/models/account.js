@@ -132,15 +132,12 @@ class Account extends Model {
                 uid
             }
         })
-        console.log(2);
         if(!userCodeData) {
             const redisAccount = await Account.delCache(redis, uid, type)
-            console.log(3);
             // 在客户端设置该账号不存在，重新激活
             throw new global.errs.codeError('激活码失效', 10010, {data: redisAccount})
         }
         const newsAccountData = await Account.getAccount(userCodeData['code'], type, uid, redis)
-        console.log(4);
         redisAccount[type] = newsAccountData[0]
         redis.set(`account:${uid}:time`, new Date().getTime())
         redis.set(`account:${uid}`, JSON.stringify(redisAccount))
@@ -227,11 +224,11 @@ class Account extends Model {
         const nextDate = new Date(oldYear, oldMonth, oldDay)
         const nowDate = new Date()
 
-        if(nextDate.getTime() > Number(startTime) && nextDate.getTime() < nowDate.getTime()) {
-            return true
-        } else {
-            throw new global.errs.NotFound('晚上12点之后更新')
-        }
+        // if(nextDate.getTime() > Number(startTime) && nextDate.getTime() < nowDate.getTime()) {
+        //     return true
+        // } else {
+        //     throw new global.errs.NotFound('晚上12点之后更新')
+        // }
         
         return true
     }

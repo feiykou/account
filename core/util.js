@@ -41,7 +41,7 @@ const findMembers = function (instance, {
 
 
 const getNextMonth = function(date) {
-    var dateObj = new Date(date)
+    var dateObj = date
     var year = dateObj.getFullYear(); //获取当前日期的年份
     var month = dateObj.getMonth() + 1; //获取当前日期的月份
     var day = dateObj.getDate(); //获取当前日期的日

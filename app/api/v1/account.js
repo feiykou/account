@@ -3,6 +3,7 @@ const Router = require('koa-router')
 const {HttpException, ParameterException} = require('../../../core/http-exception')
 const {AccountTypeValidator, AccountValidator} = require('../../validators/validator')
 const {Account} = require("../../models/account")
+const {UserCode} = require("../../models/code")
 const { Auth } = require('../../../middlewares/auth')
 const redis = require('../../../config/redis')
 const { AccountType } = require('../../lib/enum')
@@ -51,6 +52,12 @@ router.get('/:type', new Auth(Auth.USER).m, async ctx => {
     // 判断是否到时间更新，并且如果是类型是all，那么则返回缓存数据（bug：存在redis过期的可能）
     const cacheRes = await Account.getCacheData(ctx.auth.uid, t.get('path.type'), redis)
     if(t.get('path.type') == AccountType.ALL) {
+        if(!cacheRes[AccountType.QICAHCHA] && UserCode.isExistCode(AccountType.QICAHCHA, ctx.auth.uid)) {
+            cacheRes[AccountType.QICAHCHA] = {}
+        }
+        if(!cacheRes[AccountType.TIANYAN] && UserCode.isExistCode(AccountType.TIANYAN, ctx.auth.uid)) {
+            cacheRes[AccountType.TIANYAN] = {}
+        }
         ctx.body = cacheRes
         return
     }

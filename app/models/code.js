@@ -26,6 +26,17 @@ class UserCode extends Model {
         return result
     }
 
+    // 判断是否存在激活码
+    static async isExistCode(type, uid) {
+        const result = UserCode.findOne({
+            where: {
+                type,
+                uid
+            }
+        })
+        return result
+    }
+
     static async createCode(code, type, uid) {
         // 判断userCode是否有该code，判断是否有人已领取code
         const userCodeData = await UserCode.findOne({
@@ -34,6 +45,7 @@ class UserCode extends Model {
                 code
             }
         })
+        
         if(userCodeData) {
             throw new global.errs.NotFound('激活码已被使用')
         }
